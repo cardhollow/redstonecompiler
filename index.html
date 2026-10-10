@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redstone Compiler</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%225%22%20y%3D%225%22%20width%3D%2254%22%20height%3D%2254%22%20fill%3D%22%23c83b2d%22%20stroke%3D%22%235b1b15%22%20stroke-width%3D%226%22%2F%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="inner">
+      <header class="appHeader"><div class="brand"><span class="brandMark" aria-hidden="true"></span><h1>Redstone Compiler</h1></div><div class="headerActions"><span id="mode"></span><button id="fileBtn" type="button">File</button></div></header>
+      <div class="labelRow"><label id="scriptLabel" for="scriptEditor">Command script</label><button class="infoButton" type="button" data-info-title="Command editor" data-info="Every non-comment line executes one at a time from first to last; order matters. Place support blocks before components and redstone: earlier lines are not automatically rerun when a later support block is placed. Type /, a block name, or a state key/value for automatic suggestions. Editor-only &lt;js&gt;...&lt;/js&gt; blocks evaluate to strings on Run and are stripped from Minecraft exports. Only run JavaScript you trust." aria-label="Command editor information">ⓘ</button></div>
+      <div id="scriptEditor" aria-label="Command script editor"></div>
+      <textarea id="script" spellcheck="false" hidden></textarea>
+      <div id="editorTools" class="row editorTools" hidden>
+        <button id="findScript" type="button" title="Find in the command script (Ctrl+F)">Find</button>
+        <button id="replaceScript" type="button" title="Find and replace in the command script (Ctrl+H)">Replace</button>
+        <span>Ctrl+F / Ctrl+H</span>
+      </div>
+      <div class="row actions">
+        <button id="run" class="primary">Run script</button>
+        <button id="clearRun">Clear &amp; Run</button>
+        <button id="wipe">Clear world</button>
+      </div>
+      <input id="cmd" placeholder="/setblock 0 1 0 redstone_block" autocomplete="off" spellcheck="false">
+      <div class="logHeader"><span>Logs <button class="infoButton" type="button" data-info-title="Simulation logs" data-info="Command results, support warnings, block removals, and parsing errors appear here. Clear logs only clears this history; it does not change the world." aria-label="Log information">ⓘ</button></span><button id="copyLogs" type="button" title="Copy log history">Copy logs</button><button id="toggleLogs" type="button" aria-expanded="true">Hide logs</button><button id="clearLogs" type="button">Clear logs</button></div>
+      <div id="log" aria-live="polite"></div>
+      <div class="row speed">
+        <label for="rate">Tick</label><button class="infoButton" type="button" data-info-title="Tick speed" data-info="Tick is the delay between simulator updates in milliseconds. Pause stops automatic ticks; Step advances one tick." aria-label="Tick speed information">ⓘ</button>
+        <input id="rate" type="range" min="20" max="500" value="50">
+        <span id="rateOut">50 ms</span>
+        <button id="pause">Pause</button>
+        <button id="step">Step</button>
+        <label class="daylightToggle" title="When enabled, world time advances automatically"><input id="daylightCycleToggle" type="checkbox" checked> Daylight cycle</label>
+      </div>
+    </div>
+  </aside>
+  <main id="stage">
+    <div id="viewControls" aria-label="View controls">
+      <button id="toggle" title="Show / hide command panel">&#9664;</button>
+      <button id="blocksBtn" title="Show all available blocks">Blocks</button>
+      <button class="infoButton viewInfo" type="button" data-info-title="Viewport controls" data-info="Drag to orbit. Right-drag or Shift-drag pans. Mouse wheel or pinch zooms. Tap a component to use it; right-click or touch-and-hold opens its remove menu." aria-label="Viewport information">ⓘ</button>
+      <button id="cameraAnchorBtn" title="Choose a block for the camera to orbit around">Set Camera Anchor</button>
+      <select id="cameraAnchorSelect" aria-label="Camera anchor">
+        <option value="none">Anchor: NONE (center)</option>
+      </select>
+      <button id="viewOnlyBtn" title="Prevent block interactions while keeping camera controls active">View Only: OFF</button>
+    </div>
+    <button id="structuresToggle" title="Show structure panel">Structures</button>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="blockMenu" hidden role="dialog" aria-label="Block actions">
+      <div class="blockMenuTitle" id="blockMenuTitle">Block</div>
+      <div class="blockMenuPosition" id="blockMenuPosition"></div>
+      <div class="blockMenuStates" id="blockMenuStates">No states</div>
+      <button id="removeBlockBtn" class="dangerAction">Remove block</button>
+      <button id="scrollCommandBtn" type="button" disabled>Scroll CMD</button>
+      <button id="closeBlockMenuBtn" class="blockMenuClose">Close</button>
+    </div>
+    <div id="blocks" hidden></div>
+    <div id="hud"></div>
+    <section id="audioMonitor" aria-label="Spatial audio left and right channel monitor">
+      <div class="audioMonitorHeader"><span>SPATIAL AUDIO</span><span id="audioDistance">—</span></div>
+      <div class="audioSourceRow"><strong id="audioSoundName">NO SOUND</strong><span id="audioDirection">CENTER</span></div>
+      <div class="audioChannel"><span class="audioChannelName">L</span><div class="audioMeterTrack"><div id="audioLeftMeter" class="audioMeterFill"></div></div><span id="audioLeftLevel" class="audioLevel">0%</span></div>
+      <div class="audioChannel"><span class="audioChannelName">R</span><div class="audioMeterTrack"><div id="audioRightMeter" class="audioMeterFill right"></div></div><span id="audioRightLevel" class="audioLevel">0%</span></div>
+      <div id="audioSourcePosition" class="audioSourcePosition">XYZ —</div>
+    </section>
+    <div id="buildingProgress" hidden role="status" aria-live="polite">
+      <div class="buildingProgressLabel"><span id="buildingProgressText">Building...</span><span id="buildingPercent">0%</span></div>
+      <div id="buildingProgressTrack" role="progressbar" aria-label="Building simulation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="buildingProgressFill"></div></div>
+    </div>
+    <div id="view"></div>
+  </main>
+  <aside id="structurePanel">
+    <div class="structureInner">
+      <header class="structureHeader"><div class="headerWithInfo"><h2>Structure Library</h2><button class="infoButton" type="button" data-info-title="Structure library" data-info="Create a structure by editing JSON, importing a .mcstructure or JSON file, or running /structure save in the command editor. Load saved entries with /structure load name x y z and delete them with /structure delete name. File handles importing and exporting." aria-label="Structure library information">ⓘ</button></div><button id="closeStructures" title="Hide structures">×</button></header>
+      <label for="structureName">Structure name</label>
+      <input id="structureName" value="barrel_signal_1" autocomplete="off" spellcheck="false">
+      <label for="structureJson">Structure JSON</label>
+      <textarea id="structureJson" spellcheck="false"></textarea>
+      <div class="row structureFormActions"><button id="addStructure" class="primary blockButton">Add Structure</button><button id="cancelStructureEdit" class="blockButton" hidden>Cancel Edit</button></div>
+      <div id="structureStatus" role="status"></div>
+      <div class="sectionTitle"><span>Saved structures</span><button class="infoButton" type="button" data-info-title="Saved structures" data-info="Preset and custom structures are stored in this browser. Structures can be created with JSON, imports, or /structure save, loaded with /structure load, and deleted with /structure delete." aria-label="Saved structures information">ⓘ</button></div>
+      <div id="structurePresets"></div>
+    </div>
+  </aside>
+  <div id="fileModal" class="modalBackdrop" hidden role="dialog" aria-modal="true" aria-labelledby="fileModalTitle">
+    <section class="fileDialog">
+      <header class="modalHeader"><div class="headerWithInfo"><h2 id="fileModalTitle">File</h2><button class="infoButton" type="button" data-info-title="File import and export" data-info="Import a .mcfunction file into the command editor, a .mcstructure file into the structure library, or JSON into the structure editor. Export creates a .mcfunction script, a native .mcstructure, or a .mcpack behavior pack." aria-label="File information">ⓘ</button></div><button id="closeFileModal" class="closeModal" type="button" aria-label="Close file dialog">×</button></header>
+      <div class="fileSection">
+        <label for="structureJsonFile">Import file</label>
+        <input id="structureJsonFile" type="file" accept=".mcfunction,.txt,.mcstructure,.json,text/plain,application/json,application/octet-stream">
+        <p class="fieldNote">Supported: .mcfunction / .txt, .mcstructure, and .json</p>
+      </div>
+      <div class="fileSection">
+        <label for="exportName">Export name</label>
+        <input id="exportName" type="text" value="redstone_structure" autocomplete="off" spellcheck="false">
+        <button id="exportFileBtn" class="primary exportAction" type="button">Export…</button>
+        <div id="exportFormats" class="formatPicker" hidden role="group" aria-label="Export format">
+          <button type="button" data-format="mcfunction"><strong>.mcfunction</strong><span>Command script</span></button>
+          <button type="button" data-format="mcstructure"><strong>.mcstructure</strong><span>Structure file</span></button>
+          <button type="button" data-format="mcpack"><strong>.mcpack</strong><span>Behavior pack</span></button>
+        </div>
+      </div>
+      <div id="fileStatus" class="fileStatus" role="status" aria-live="polite"></div>
+    </section>
+  </div>
+  <div id="infoPopover" class="infoPopover" hidden role="dialog" aria-live="polite"><div id="infoPopoverTitle" class="infoPopoverTitle"></div><div id="infoPopoverText" class="infoPopoverText"></div></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/ext-language_tools.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.43.3/ext-searchbox.min.js"></script>
+<script src="js/simulationEngine.js"></script>
+<script src="js/bedrockStructure.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
