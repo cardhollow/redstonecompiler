@@ -827,13 +827,182 @@ const structureTemplates = {
       {pos:[2,1,0],name:'minecraft:redstone_wire',states:{redstone_signal:0}}
     ]
   },
-  noteblock_example: {
-    size:[2,2,1], blocks:[
-      {pos:[0,0,0],name:'minecraft:stone'},
-      {pos:[0,1,0],name:'minecraft:noteblock',note:12},
-      {pos:[1,0,0],name:'minecraft:stone'}
-    ]
-  }
+  all_noteblocks: {"size":[5,2,5],"blocks":[{"pos":[0,0,0],"name":"minecraft:dirt"},{"pos":[0,1,0],"name":"minecraft:noteblock","states":{"note":0}},{"pos":[1,0,0],"name":"minecraft:dirt"},{"pos":[1,1,0],"name":"minecraft:noteblock","states":{"note":1}},{"pos":[2,0,0],"name":"minecraft:dirt"},{"pos":[2,1,0],"name":"minecraft:noteblock","states":{"note":2}},{"pos":[3,0,0],"name":"minecraft:dirt"},{"pos":[3,1,0],"name":"minecraft:noteblock","states":{"note":3}},{"pos":[4,0,0],"name":"minecraft:dirt"},{"pos":[4,1,0],"name":"minecraft:noteblock","states":{"note":4}},{"pos":[0,0,1],"name":"minecraft:dirt"},{"pos":[0,1,1],"name":"minecraft:noteblock","states":{"note":5}},{"pos":[1,0,1],"name":"minecraft:dirt"},{"pos":[1,1,1],"name":"minecraft:noteblock","states":{"note":6}},{"pos":[2,0,1],"name":"minecraft:dirt"},{"pos":[2,1,1],"name":"minecraft:noteblock","states":{"note":7}},{"pos":[3,0,1],"name":"minecraft:dirt"},{"pos":[3,1,1],"name":"minecraft:noteblock","states":{"note":8}},{"pos":[4,0,1],"name":"minecraft:dirt"},{"pos":[4,1,1],"name":"minecraft:noteblock","states":{"note":9}},{"pos":[0,0,2],"name":"minecraft:dirt"},{"pos":[0,1,2],"name":"minecraft:noteblock","states":{"note":10}},{"pos":[1,0,2],"name":"minecraft:dirt"},{"pos":[1,1,2],"name":"minecraft:noteblock","states":{"note":11}},{"pos":[2,0,2],"name":"minecraft:dirt"},{"pos":[2,1,2],"name":"minecraft:noteblock","states":{"note":12}},{"pos":[3,0,2],"name":"minecraft:dirt"},{"pos":[3,1,2],"name":"minecraft:noteblock","states":{"note":13}},{"pos":[4,0,2],"name":"minecraft:dirt"},{"pos":[4,1,2],"name":"minecraft:noteblock","states":{"note":14}},{"pos":[0,0,3],"name":"minecraft:dirt"},{"pos":[0,1,3],"name":"minecraft:noteblock","states":{"note":15}},{"pos":[1,0,3],"name":"minecraft:dirt"},{"pos":[1,1,3],"name":"minecraft:noteblock","states":{"note":16}},{"pos":[2,0,3],"name":"minecraft:dirt"},{"pos":[2,1,3],"name":"minecraft:noteblock","states":{"note":17}},{"pos":[3,0,3],"name":"minecraft:dirt"},{"pos":[3,1,3],"name":"minecraft:noteblock","states":{"note":18}},{"pos":[4,0,3],"name":"minecraft:dirt"},{"pos":[4,1,3],"name":"minecraft:noteblock","states":{"note":19}},{"pos":[0,0,4],"name":"minecraft:dirt"},{"pos":[0,1,4],"name":"minecraft:noteblock","states":{"note":20}},{"pos":[1,0,4],"name":"minecraft:dirt"},{"pos":[1,1,4],"name":"minecraft:noteblock","states":{"note":21}},{"pos":[2,0,4],"name":"minecraft:dirt"},{"pos":[2,1,4],"name":"minecraft:noteblock","states":{"note":22}},{"pos":[3,0,4],"name":"minecraft:dirt"},{"pos":[3,1,4],"name":"minecraft:noteblock","states":{"note":23}},{"pos":[4,0,4],"name":"minecraft:dirt"},{"pos":[4,1,4],"name":"minecraft:noteblock","states":{"note":24}}]},
+  noteblock_0: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 0}}
+  ]
+},
+noteblock_1: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 1}}
+  ]
+},
+noteblock_2: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 2}}
+  ]
+},
+noteblock_3: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 3}}
+  ]
+},
+noteblock_4: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 4}}
+  ]
+},
+noteblock_5: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 5}}
+  ]
+},
+noteblock_6: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 6}}
+  ]
+},
+noteblock_7: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 7}}
+  ]
+},
+noteblock_8: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 8}}
+  ]
+},
+noteblock_9: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 9}}
+  ]
+},
+noteblock_10: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 10}}
+  ]
+},
+noteblock_11: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 11}}
+  ]
+},
+noteblock_12: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 12}}
+  ]
+},
+noteblock_13: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 13}}
+  ]
+},
+noteblock_14: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 14}}
+  ]
+},
+noteblock_15: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 15}}
+  ]
+},
+noteblock_16: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 16}}
+  ]
+},
+noteblock_17: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 17}}
+  ]
+},
+noteblock_18: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 18}}
+  ]
+},
+noteblock_19: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 19}}
+  ]
+},
+noteblock_20: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 20}}
+  ]
+},
+noteblock_21: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 21}}
+  ]
+},
+noteblock_22: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 22}}
+  ]
+},
+noteblock_23: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 23}}
+  ]
+},
+noteblock_24: {
+  size: [1, 2, 1],
+  blocks: [
+    {pos: [0, 0, 0], name: 'minecraft:dirt'},
+    {pos: [0, 1, 0], name: 'minecraft:noteblock', states: {note: 24}}
+  ]
+}
 };
 const templateLabels = {
   barrel_signal_1:['Barrel · 1 item','One item slot; comparator outputs signal 1.'],
