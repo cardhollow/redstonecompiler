@@ -111,14 +111,14 @@ function stateFor(block){
       id=sourceName==='powered_repeater'?'minecraft:powered_repeater':'minecraft:unpowered_repeater';
       
       
-      const card=s['minecraft:cardinal_direction']??s.cardinal_direction??DIRECTIONS[facing^1];
+      const card=s['minecraft:cardinal_direction']??s.cardinal_direction??DIRECTIONS[facing];
       string('minecraft:cardinal_direction',['east','west','north','south'].includes(String(card).toLowerCase())?String(card).toLowerCase():'south');
       integer('repeater_delay',num(['repeater_delay'],Math.max(0,Math.min(3,num(['delay'],1,1,4)-1)),0,3)); break;
     }
     case 'comparator': {
       const lit=bool('output_lit_bit','out')||sourceName==='powered_comparator';
       id=lit?'minecraft:powered_comparator':'minecraft:unpowered_comparator';
-      const card=s['minecraft:cardinal_direction']??s.cardinal_direction??DIRECTIONS[facing^1];
+      const card=s['minecraft:cardinal_direction']??s.cardinal_direction??DIRECTIONS[facing];
       string('minecraft:cardinal_direction',['east','west','north','south'].includes(String(card).toLowerCase())?String(card).toLowerCase():'south');
       byte('output_lit_bit',lit); byte('output_subtract_bit',bool('output_subtract_bit','subtract')||String(s.mode||'').toLowerCase()==='subtract'); break;
     }

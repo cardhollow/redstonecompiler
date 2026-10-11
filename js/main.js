@@ -799,7 +799,7 @@ const structureTemplates = {
     size:[3,2,1], blocks:[
       {pos:[0,0,0],name:'minecraft:stone'}, {pos:[1,0,0],name:'minecraft:stone'}, {pos:[2,0,0],name:'minecraft:stone'},
       {pos:[0,1,0],name:'minecraft:barrel',states:{facing_direction:5},items:[{name:'minecraft:stone',count:1,slot:0}]},
-      {pos:[1,1,0],name:'minecraft:unpowered_comparator',states:{'minecraft:cardinal_direction':'west',output_lit_bit:false,output_subtract_bit:false}},
+      {pos:[1,1,0],name:'minecraft:unpowered_comparator',states:{'minecraft:cardinal_direction':'east',output_lit_bit:false,output_subtract_bit:false}},
       {pos:[2,1,0],name:'minecraft:redstone_wire',states:{redstone_signal:0}}
     ]
   },
@@ -807,7 +807,7 @@ const structureTemplates = {
     size:[3,2,1], blocks:[
       {pos:[0,0,0],name:'minecraft:stone'}, {pos:[1,0,0],name:'minecraft:stone'}, {pos:[2,0,0],name:'minecraft:stone'},
       {pos:[0,1,0],name:'minecraft:barrel',states:{facing_direction:5},items:[{name:'minecraft:stone',count:64,slot:0},{name:'minecraft:stone',count:64,slot:1}]},
-      {pos:[1,1,0],name:'minecraft:unpowered_comparator',states:{'minecraft:cardinal_direction':'west',output_lit_bit:false,output_subtract_bit:false}},
+      {pos:[1,1,0],name:'minecraft:unpowered_comparator',states:{'minecraft:cardinal_direction':'east',output_lit_bit:false,output_subtract_bit:false}},
       {pos:[2,1,0],name:'minecraft:redstone_wire',states:{redstone_signal:0}}
     ]
   },
@@ -815,7 +815,7 @@ const structureTemplates = {
     size:[3,2,1], blocks:[
       {pos:[0,0,0],name:'minecraft:stone'}, {pos:[1,0,0],name:'minecraft:stone'}, {pos:[2,0,0],name:'minecraft:stone'},
       {pos:[0,1,0],name:'minecraft:barrel',states:{facing_direction:5},items:Array.from({length:12},(_,slot)=>({name:'minecraft:stone',count:64,slot}))},
-      {pos:[1,1,0],name:'minecraft:unpowered_comparator',states:{'minecraft:cardinal_direction':'west',output_lit_bit:false,output_subtract_bit:false}},
+      {pos:[1,1,0],name:'minecraft:unpowered_comparator',states:{'minecraft:cardinal_direction':'east',output_lit_bit:false,output_subtract_bit:false}},
       {pos:[2,1,0],name:'minecraft:redstone_wire',states:{redstone_signal:0}}
     ]
   },
@@ -823,7 +823,7 @@ const structureTemplates = {
     size:[3,2,1], blocks:[
       {pos:[0,0,0],name:'minecraft:stone'}, {pos:[1,0,0],name:'minecraft:stone'}, {pos:[2,0,0],name:'minecraft:stone'},
       {pos:[0,1,0],name:'minecraft:barrel',states:{facing_direction:5},items:Array.from({length:27},(_,slot)=>({name:'minecraft:stone',count:64,slot}))},
-      {pos:[1,1,0],name:'minecraft:unpowered_comparator',states:{'minecraft:cardinal_direction':'west',output_lit_bit:false,output_subtract_bit:false}},
+      {pos:[1,1,0],name:'minecraft:unpowered_comparator',states:{'minecraft:cardinal_direction':'east',output_lit_bit:false,output_subtract_bit:false}},
       {pos:[2,1,0],name:'minecraft:redstone_wire',states:{redstone_signal:0}}
     ]
   },

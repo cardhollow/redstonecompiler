@@ -32,7 +32,7 @@ const clone = o => JSON.parse(JSON.stringify(o == null ? {} : o));
 const pub = s => { const o = {}; for (const k in s) if (k[0] !== '_') o[k] = s[k]; return o; };
 const cond = b => b.def.solid && !b.state.extended;           
 const BEDROCK_STATE_SCHEMA = {
-  stone:{}, obsidian:{}, glass:{}, slime:{}, honey_block:{}, glazed_terracotta:{}, redstone_block:{}, air:{},
+  stone:{}, target:{}, obsidian:{}, glass:{}, slime:{}, honey_block:{}, glazed_terracotta:{}, redstone_block:{}, air:{},
   wool:{color:WOOL_COLORS},
   daylight_detector:{redstone_signal:{min:0,max:15}},
   barrel:{facing_direction:[0,1,2,3,4,5],open_bit:[false,true]},
@@ -105,7 +105,7 @@ function canonicalBedrockStates(name, supplied, sourceName) {
     else if (rawAttach>=0) out.torch_facing_direction=({0:'west',1:'east',2:'bottom',3:'top',4:'north',5:'south'})[rawAttach];
   } else if (n === 'repeater' || n === 'comparator') {
     let card = s['minecraft:cardinal_direction'] ?? s.cardinal_direction;
-    if (card === undefined && rawDir>=0) card=enumDirection(rawDir^1);
+    if (card === undefined && rawDir>=0) card=enumDirection(rawDir);
     if (typeof card === 'string' && ['north','south','east','west'].includes(card.toLowerCase())) out['minecraft:cardinal_direction']=card.toLowerCase();
     if (n === 'repeater') {
       if (has('repeater_delay') && Number.isFinite(Number(s.repeater_delay))) out.repeater_delay=Math.max(0,Math.min(3,Math.trunc(Number(s.repeater_delay))));
@@ -171,7 +171,7 @@ function runtimeStateFromBedrock(name, source, raw, sourceType) {
     const tf=String(s.torch_facing_direction||'top').toLowerCase(); out.attach=({top:3,bottom:2,west:0,east:1,north:4,south:5})[tf]??3;
   }
   if (n==='repeater' || n==='comparator') {
-    if (getCard!==undefined) { const f=NAMES.indexOf(String(getCard).toLowerCase()); if(f>=0) out.facing=f^1; }
+    if (getCard!==undefined) { const f=NAMES.indexOf(String(getCard).toLowerCase()); if(f>=0) out.facing=f; }
     if (n==='repeater') { out.delay=Math.max(1,Math.min(4,Math.trunc(Number(s.repeater_delay ?? 0)||0)+1)); out.powered=String(sourceType||'')==='powered_repeater'; }
     else { out.subtract=isBool(s.output_subtract_bit); out.out=isBool(s.output_lit_bit)||String(sourceType||'')==='powered_comparator'?1:0; }
   }
@@ -280,6 +280,7 @@ function noteBlockChk(c) {
   if (powered) playNoteBlock(c);
 }
 def('redstone_block',{ solid:true, pushable:'push', weak:() => 15, strong:() => 15, connects:() => true });
+def('target',{ solid:true, pushable:'push', connects:() => true, description:'Target block: a solid block that redstone dust connects to (unlike stone). Projectile hits are not simulated.' });
 def('daylight_detector',{ solid:false, pushable:'push', pullable:true, defaults:{power:0,inverted:false},
   description:'Daylight Detector (older Bedrock name: Daylight Sensor). ID: minecraft:daylight_detector; inverted ID: minecraft:daylight_detector_inverted. A 6/16-height floor-surface block that outputs 0–15 redstone power from sky daylight; use/interact to invert it.',
   connects:()=>true,
@@ -336,29 +337,37 @@ def('redstone_torch', { defaults:{ attach:3, lit:true }, connects:() => true,
   weak:(c, d) => c.state.lit && d !== c.state.attach ? 15 : 0,
   strong:(c, d) => c.state.lit && d === 2 && c.state.attach !== 2 ? 15 : 0,
   onNeighbor:torchChk, onTick:torchTick });
-function torchPowered(c) { return c.w.strongInto(add(c.p, c.state.attach)) > 0; }
+// Vanilla burnout rule: only the moments a torch is switched OFF are logged. If a torch has been switched
+// off 8 or more times within the last 60 game ticks (30 redstone ticks) it burns out and cannot relight
+// until the log drops below 8 again (vanilla re-checks 160 game ticks = 80 redstone ticks later).
+// A lever (or button) can never realistically do that, only fast clock loops / torch feedback can.
+const TORCH_BURNOUT_WINDOW = 30, TORCH_BURNOUT_COUNT = 8, TORCH_RELIGHT_DELAY = 80;
+function torchPowered(c) { return c.input(c.state.attach) > 0; }
+function torchRecent(c) { const t = Array.isArray(c.state._toggles) ? c.state._toggles : []; return t.filter(x => c.w.time - x <= TORCH_BURNOUT_WINDOW); }
 function torchChk(c) {
-  if (c.state._burnUntil && c.w.time < c.state._burnUntil) return;
-  if (torchPowered(c) === c.state.lit) c.schedule(1, 't');
+  const lit = c.state.lit, powered = torchPowered(c);
+  if (lit === powered) c.schedule(1, 't');
 }
 function torchTick(c, tag) {
-  const s = c.state, powered = torchPowered(c);
-  if (tag === 'cool') {
-    c.setState({ lit:!powered, _burnUntil:0, _toggles:[] });
-    return;
+  const s = c.state, powered = torchPowered(c), recent = torchRecent(c);
+  if (s.lit) {
+    if (powered) {
+      recent.push(c.w.time); s._toggles = recent;
+      c.setState({ lit:false });
+      c.w.emitSound('torch',{lit:false,pos:c.p.slice()});
+      if (recent.length >= TORCH_BURNOUT_COUNT) {
+        c.w.events.push({ok:false,level:'warn',cmd:'Redstone torch',msg:'Torch @ '+c.p.join(' ')+' burned out (switched off '+recent.length+' times in 60 game ticks).'});
+        c.w.emitSound('torch_burnout',{pos:c.p.slice()});
+        c.schedule(TORCH_RELIGHT_DELAY, 'cool', true);
+      }
+    } else s._toggles = recent;
+  } else {
+    s._toggles = recent;
+    if (!powered) {
+      if (recent.length < TORCH_BURNOUT_COUNT) { c.setState({ lit:true }); c.w.emitSound('torch',{lit:true,pos:c.p.slice()}); }
+      else c.schedule(TORCH_RELIGHT_DELAY, 'cool', true);
+    }
   }
-  if (s._burnUntil && c.w.time < s._burnUntil) return;
-  if (powered !== s.lit) return;
-  
-  
-  const toggles = (Array.isArray(s._toggles) ? s._toggles : []).filter(t => c.w.time - t <= 30);
-  toggles.push(c.w.time);
-  if (toggles.length >= 8) {
-    c.setState({ lit:false, _toggles:toggles, _burnUntil:c.w.time + 30 });
-    c.w.events.push({ok:false,level:'warn',cmd:'Redstone torch',msg:'Torch @ '+c.p.join(' ')+' burned out from rapid toggling.'});
-    c.w.emitSound('torch_burnout',{pos:c.p.slice()});
-    c.schedule(30, 'cool', true);
-  } else { c.setState({ lit:!powered, _toggles:toggles }); c.w.emitSound('torch',{lit:!powered,pos:c.p.slice()}); }
 }
 
 const wirePow = (c, d) => {
@@ -415,7 +424,7 @@ def('redstone_lamp', { solid:true, pushable:'push', defaults:{ lit:false },
   onNeighbor:c => { const p = lampWant(c); if (p && !c.state.lit) c.setState({ lit:true }); else if (!p && c.state.lit) c.schedule(2, 'l'); },
   onTick:c => { if (!lampWant(c) && c.state.lit) c.setState({ lit:false }); } });
 
-def('observer', { solid:true, pushable:'push', defaults:{ facing:3, powered:false }, connects:(s, d) => d === s.facing || d === opp(s.facing),
+def('observer', { solid:true, pushable:'push', defaults:{ facing:3, powered:false }, connects:(s, d) => d === s.facing,
   weak:(c, d) => c.state.powered && d === opp(c.state.facing) ? 15 : 0,
   strong:(c, d) => c.state.powered && d === opp(c.state.facing) ? 15 : 0,
   onNeighbor:obsChk,
@@ -523,13 +532,13 @@ class World {
           else state.facing=BEDROCK_FACING_TO_DIR[v];
         } else if (typeof face==='string') {
           const f=NAMES.indexOf(face.toLowerCase());
-          if(f>=0){if(BUTTON_TYPES.has(parsed.name))state.attach=opposite(f);else state.facing=(parsed.name==='repeater'||parsed.name==='comparator')?opposite(f):f;}
+          if(f>=0){if(BUTTON_TYPES.has(parsed.name))state.attach=opposite(f);else state.facing=f;}
         }
       }
       const cardinal=state['minecraft:cardinal_direction']??state.cardinal_direction;
       if (cardinal!==undefined && supplied.facing===undefined && state.facing===undefined) {
         const f=NAMES.indexOf(String(cardinal).toLowerCase());
-        if(f>=0) state.facing=(parsed.name==='repeater'||parsed.name==='comparator')?opposite(f):f;
+        if(f>=0) state.facing=f;
       }
       if (state.mode !== undefined) state.subtract=String(state.mode).toLowerCase()==='subtract';
       if (state['output_subtract_bit']!==undefined) state.subtract=toBool(state['output_subtract_bit']);
@@ -589,7 +598,7 @@ class World {
       else if(n==='barrel'&&Number.isInteger(state.facing))raw.facing_direction=BARREL_DIR_TO_FACING[state.facing];
       else if(n==='dropper'&&Number.isInteger(state.facing))raw.facing_direction=DIR_TO_BEDROCK_FACING[state.facing];
       else if(n==='observer'&&Number.isInteger(state.facing))raw['minecraft:facing_direction']=NAMES[state.facing];
-      else if((n==='repeater'||n==='comparator')&&Number.isInteger(state.facing))raw['minecraft:cardinal_direction']=NAMES[state.facing^1];
+      else if((n==='repeater'||n==='comparator')&&Number.isInteger(state.facing))raw['minecraft:cardinal_direction']=NAMES[state.facing];
       else if(BUTTON_TYPES.has(n)&&Number.isInteger(state.attach))raw.facing_direction=DIR_TO_BEDROCK_FACING[state.attach^1];
       else if(n==='redstone_torch'&&Number.isInteger(state.attach))raw.torch_facing_direction=({0:'west',1:'east',2:'bottom',3:'top',4:'north',5:'south'})[state.attach]||'top';
       else if(n==='lever'&&Number.isInteger(state.attach)){
@@ -816,11 +825,19 @@ class World {
   }
 
   
+  canHostWire(b) { return !!(b && b.def && (b.def.solid || b.type==='glass' || b.type==='daylight_detector')); }
+  // Vanilla redstone dust connection rules:
+  //  * a dust connects sideways to other dust, and to a block ONLY if that block is a redstone component
+  //    (lever, button, plate, torch, redstone block, target block, comparator, daylight detector, ...);
+  //    repeaters only on their front/back axis; observers only on their output (back) side.
+  //  * plain solid blocks (stone, planks, ...), lamps, pistons, note blocks, droppers... never connect.
+  //  * dust steps UP onto a block's top if the block above this dust isn't a conductor,
+  //    and steps DOWN past a non-conductive neighbour (air, glass, ...).
   wireLinks(p) { const out = [], upOK = !this.isSolid(add(p, 2));
     for (const d of H4) { const n = add(p, d), b = this.getp(n);
+      if (upOK && this.canHostWire(b)) { const u = add(n, 2), ub = this.getp(u); if (ub && ub.type === 'redstone_wire') { out.push({ pos:u, d, dy:1, net:true }); continue; } }
       if (b && b.type === 'redstone_wire') { out.push({ pos:n, d, dy:0, net:true }); continue; }
-      if (b && ((b.def.connects && b.def.connects(b.state, d)) || b.def.solid)) { out.push({ pos:n, d, dy:0, net:false }); continue; }
-      if (upOK) { const u = add(n, 2), ub = this.getp(u); if (ub && ub.type === 'redstone_wire') out.push({ pos:u, d, dy:1, net:true }); }
+      if (b && b.def.connects && b.def.connects(b.state, d)) { out.push({ pos:n, d, dy:0, net:false }); continue; }
       if (!(b && cond(b))) { const dn = add(n, 3), db = this.getp(dn); if (db && db.type === 'redstone_wire') out.push({ pos:dn, d, dy:-1, net:true }); } }
     return out; }
   updateWireNet(p0) { const net = new Map(), st = [p0];
@@ -1060,7 +1077,7 @@ function createHost(post) {
 }
 function catalog(includeAll=false) {
   const visible = new Set([
-    'air','stone','iron_block','glass','obsidian','wool','redstone_block','redstone_wire','redstone_torch',
+    'air','stone','iron_block','glass','obsidian','wool','redstone_block','target','redstone_wire','redstone_torch',
     'redstone_lamp','daylight_detector','lever','repeater','comparator','observer','piston','sticky_piston','dropper','barrel',
     'noteblock','slime','honey_block',...NOTEBLOCK_SUPPORT_BLOCKS,
     ...BUTTON_TYPES,...PRESSURE_PLATE_TYPES

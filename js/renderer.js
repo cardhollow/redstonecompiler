@@ -18,6 +18,7 @@ const mat = (b, s, e, o) => new T.MeshLambertMaterial(Object.assign({ map: tex(b
 const M = {
   
   stone: mat('#858a90', '#3b4148', g => { g.fillStyle='#aeb3b8'; g.fillRect(2,3,2,1); g.fillRect(10,11,3,1); g.fillStyle='#646a71'; g.fillRect(5,8,2,1); }), ironBlock: mat('#bfc4c8','#7b8186',g=>{g.strokeStyle='#e2e5e7';g.strokeRect(1,1,14,14);g.fillStyle='#a0a6ab';g.fillRect(3,4,3,2);g.fillRect(10,10,3,2);}), obsidian: mat('#16111f', '#8a50ff'),
+  target: mat('#e8d9cf', '#d9d0c8', g => { g.fillStyle='#d8432e'; g.fillRect(4,4,8,8); g.fillStyle='#f4efe9'; g.fillRect(5,5,6,6); g.fillStyle='#d8432e'; g.fillRect(6,6,4,4); g.fillStyle='#f4efe9'; g.fillRect(7,7,2,2); }),
   rsblock: mat('#b01a0a', '#ff7050', g => { g.fillStyle = '#6a0c04'; g.fillRect(0, 7, 16, 2); g.fillRect(7, 0, 2, 16); }),
   lampOff: mat('#5d4a33', '#000', g => { g.fillStyle = '#3b2e1e'; g.strokeStyle = '#3b2e1e'; g.strokeRect(1.5, 1.5, 13, 13); }),
   lampOn: mat('#ffdc8c', '#fff', g => { g.strokeStyle = '#d8a050'; g.strokeRect(1.5, 1.5, 13, 13); }, { emissive: new T.Color(0x886622) }),
@@ -241,22 +242,28 @@ const build = {
   },
   redstone_wire: s => {
     const power=Math.max(0,Math.min(15,Math.trunc(Number(s.power)||0))), m = wireMat(power), g = grp(box(.3, .04, .3, [m,m,wireTopMat(power),m,m,m], 0, -.48, 0));
-    for (const [d, dy] of (Array.isArray(s.links)?s.links:[])) { const v = DIRV[d], x = !!v[0];
+    const _links=Array.isArray(s.links)?s.links:[], _arms=_links.slice();
+    if(_links.length===1) _arms.push([_links[0][0]^1,0]);   // one connection => dust lies as a straight line (vanilla)
+    for (const [d, dy] of _arms) { const v = DIRV[d], x = !!v[0];
       g.add(box(x ? .35 : .3, .04, x ? .3 : .35, m, v[0] * .325, -.48, v[2] * .325));
       if (dy === 1) g.add(box(x ? .04 : .3, 1, x ? .3 : .04, m, v[0] * .48, 0, v[2] * .48));
       else if (dy === -1) g.add(box(x ? .04 : .3, 1, x ? .3 : .04, m, v[0] * .48, -.98, v[2] * .48)); }
     return g; },
   redstone_torch: s => {
+    // The torch is built inside an outer wrapper group: the scene code later overwrites the position of the
+    // returned object with the block centre, so the wall offset/tilt must live on an INNER group,
+    // otherwise a wall torch ends up floating in the middle of the block.
     const d=Math.max(0,Math.min(5,Math.trunc(Number(s.attach)||0))),v=DIRV[d],on=s.lit;
-    const t=grp(
-      box(.12,.55,.12,M.stick,0,-.18,0),
-      box(.18,.18,.18,on?M.torchOn:M.torchOff,0,.19,0)
-    );
-    if(d===0||d===1){t.position.set(v[0]*.35,0,0);t.rotation.z=v[0]*.34;}
-    else if(d===4||d===5){t.position.set(0,0,v[2]*.35);t.rotation.x=-v[2]*.34;}
-    else if(d===2){t.position.y=0;t.rotation.z=Math.PI;}
-    else t.position.y=0;
-    return t;
+    const outer=new T.Group(),t=new T.Group();
+    // pivot = centre of the torch's foot; stick 0 -> .5 tall, flame on top (10/16 of a block in total, like vanilla)
+    t.add(box(.125,.5,.125,M.stick,0,.25,0));
+    t.add(box(.17,.17,.17,on?M.torchOn:M.torchOff,0,.54,0));
+    const TILT=Math.PI/8, WALL=.44, FOOT=-.28;           // 22.5deg lean, foot sits flush against the wall
+    if(d===0||d===1){ t.position.set(v[0]*WALL,FOOT,0); t.rotation.z=v[0]*TILT; }
+    else if(d===4||d===5){ t.position.set(0,FOOT,v[2]*WALL); t.rotation.x=-v[2]*TILT; }
+    else if(d===2){ t.position.set(0,.5,0); t.rotation.z=Math.PI; }
+    else { t.position.set(0,-.5,0); }
+    outer.add(t); return outer;
   },
   lever: s => {
     const d=Math.max(0,Math.min(5,Math.trunc(Number(s.attach)||0))),g=new T.Group();
@@ -321,7 +328,7 @@ const meshes = new Map(), anims = [], instanceBuckets = new Map(), entityMeshes 
 const instanceObject = new T.Object3D();
 const simpleMaterials = {
   stone:M.stone, iron_block:M.ironBlock, obsidian:M.obsidian, glass:M.glass, slime:M.slime,
-  redstone_block:M.rsblock, honey_block:M.honey, glazed_terracotta:M.glazed
+  redstone_block:M.rsblock, honey_block:M.honey, glazed_terracotta:M.glazed, target:M.target
 };
 function instanceStyle(type,state) {
   if(type==='wool')return {key:'wool_'+String(state&&state.color||'white'),material:ordinaryBlockMaterial(type,state)};
