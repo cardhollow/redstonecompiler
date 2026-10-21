@@ -90,7 +90,7 @@ const M = {
   ironPlate: mat('#a9afb5','#59616a',g=>{g.strokeStyle='#dce0e4';g.strokeRect(1,1,14,14);}),
   armorStand: new T.MeshLambertMaterial({color:0x9b9589}), armorStandDark: new T.MeshLambertMaterial({color:0x625e56}),
   noteLabelFrame: new T.MeshBasicMaterial({color:0x35271e}),
-  dirt: mat('#795536','#4d3422'), grass_block: mat('#4f8539','#795536',g=>{g.fillStyle='#4f8539';g.fillRect(0,0,16,4);}), coarse_dirt: mat('#795536','#4d3422'), rooted_dirt: mat('#795536','#4d3422'), podzol: mat('#59402a','#38281c'), mycelium: mat('#74615e','#4b3941'), mud: mat('#554138','#352821'), moss_block: mat('#557c35','#385426'), leaves: mat('#55783b','#304b25'), snow_block: mat('#e9f2f8','#aebdc9'), farmland: mat('#6b4b2f','#453020'), dirt_path: mat('#9a8057','#604b32'), gravel: mat('#777b7b','#45494a'), clay: mat('#a1a8af','#79818b'),
+  sand: mat('#dbd3a0','#b8ae7a'), dirt: mat('#795536','#4d3422'), grass_block: mat('#4f8539','#795536',g=>{g.fillStyle='#4f8539';g.fillRect(0,0,16,4);}), coarse_dirt: mat('#795536','#4d3422'), rooted_dirt: mat('#795536','#4d3422'), podzol: mat('#59402a','#38281c'), mycelium: mat('#74615e','#4b3941'), mud: mat('#554138','#352821'), moss_block: mat('#557c35','#385426'), leaves: mat('#55783b','#304b25'), snow_block: mat('#e9f2f8','#aebdc9'), farmland: mat('#6b4b2f','#453020'), dirt_path: mat('#9a8057','#604b32'), gravel: mat('#777b7b','#45494a'), clay: mat('#a1a8af','#79818b'),
   packed_ice: mat('#91c9ed','#e1f6ff'), gold_block: mat('#e7bd38','#947318'), bone_block: mat('#e5dfc8','#b6ad92'),
   emerald_block: mat('#20b66b','#08723e'), hay_block: mat('#d5b23f','#90731f'), pumpkin: mat('#d77b22','#82410f'),
   glowstone: mat('#d8b574','#9f7b3e'), soul_sand: mat('#55433b','#332620'), netherrack: mat('#6d3532','#361c20'),
@@ -98,6 +98,67 @@ const M = {
   cobblestone: mat('#777c80','#52575b'), stone_bricks: mat('#898d8d','#5b6060'), quartz_block: mat('#e5dfd2','#b5afa3'),
   planks: mat('#a97a46','#704a27'), blackstone: mat('#37363f','#1d1d27'), deepslate: mat('#4d5359','#343a41'),
 };
+/* ---- Bedrock block textures ----------------------------------------------
+   PNGs use the Bedrock resource-pack names (resource_pack/textures/blocks/*.png).
+   They come from window.BLOCK_TEXTURE_DATA (js/blockTextures.js, built by
+   tools/pack-textures.py) or, when the page is served over http, straight from
+   texture/blocks/. The procedural textures above stay in place until a PNG
+   loads, and stay for good when a PNG is missing, so nothing ever goes blank.
+   Redstone wire is deliberately not in this list. */
+const bedrockCache = new Map();
+function loadBedrock(name) {
+  if (bedrockCache.has(name)) return bedrockCache.get(name);
+  const embedded = window.BLOCK_TEXTURE_DATA || {};
+  const p = new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        // Animated Bedrock textures are tall strips; the top square is frame one.
+        const frame = Math.min(img.naturalWidth, img.naturalHeight);
+        const size = frame > 64 ? 16 : frame;
+        const c = document.createElement('canvas'); c.width = c.height = size;
+        const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+        g.drawImage(img, 0, 0, frame, frame, 0, 0, size, size);
+        g.getImageData(0, 0, 1, 1); // throws on a tainted canvas (file:// without the packed bundle)
+        const t = new T.CanvasTexture(c);
+        t.magFilter = t.minFilter = T.NearestFilter; t.generateMipmaps = false;
+        resolve(t);
+      } catch (_) { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = embedded[name] || ('texture/blocks/' + name + '.png');
+  });
+  bedrockCache.set(name, p);
+  return p;
+}
+function applyBedrock(material, names, tint) {
+  const list = [].concat(names);
+  (function next(i) {
+    if (i >= list.length) return;
+    loadBedrock(list[i]).then(t => {
+      if (!t) return next(i + 1);
+      material.map = t; if (tint) material.color.set(tint); material.needsUpdate = true;
+    });
+  })(0);
+}
+const BEDROCK_MAP = {
+  stone:['stone'], ironBlock:['iron_block'], obsidian:['obsidian'], target:['target_top','target_side'], rsblock:['redstone_block'],
+  lampOff:['redstone_lamp_off'], lampOn:['redstone_lamp_on'], glass:['glass'], wood:['planks_oak'], barrel:['barrel_side'],
+  dropperSide:['furnace_side'], dropperFront:['dropper_front_horizontal'],
+  noteBlock:['noteblock'], noteTop:['noteblock'], slime:['slime'], honey:['honey_side','honey_top'],
+  plate:['iron_block'], stonePlate:['stone'], woodPlate:['planks_oak'], goldPlate:['gold_block'], ironPlate:['iron_block'], woodButton:['planks_oak'],
+  obsSide:['observer_side'], obsFront:['observer_front'], obsBack:['observer_back'], obsBackOn:['observer_back_lit'],
+  daylightSide:['daylight_detector_side'], daylightTop:['daylight_detector_top'], daylightTopInverted:['daylight_detector_inverted_top'],
+  pistonHeadFace:['piston_top_normal'], stickyPistonHeadFace:['piston_top_sticky'],
+  dirt:['dirt'], grass_block:['grass_side_carried'], coarse_dirt:['coarse_dirt'], rooted_dirt:['dirt_with_roots','dirt'], podzol:['dirt_podzol_side'], mycelium:['mycelium_side'],
+  mud:['mud'], moss_block:['moss_block'], snow_block:['snow'], farmland:['farmland_dry'], dirt_path:['grass_path_side'],
+  gravel:['gravel'], clay:['clay'], sand:['sand'], packed_ice:['ice_packed'], gold_block:['gold_block'], bone_block:['bone_block_side'],
+  emerald_block:['emerald_block'], hay_block:['hay_block_side'], pumpkin:['pumpkin_side'], glowstone:['glowstone'], soul_sand:['soul_sand'],
+  netherrack:['netherrack'], magma_block:['magma'], sea_lantern:['sea_lantern'], beacon:['beacon'], cobblestone:['cobblestone'],
+  stone_bricks:['stonebrick'], quartz_block:['quartz_block_side'], planks:['planks_oak'], blackstone:['blackstone'], deepslate:['deepslate']
+};
+for (const key in BEDROCK_MAP) if (M[key]) applyBedrock(M[key], BEDROCK_MAP[key]);
+
 const WOOL_HEX = {
   white:'#e9ecec',orange:'#f07613',magenta:'#bd44b3',light_blue:'#3aaedd',yellow:'#f8c627',lime:'#70b919',pink:'#ed8dac',gray:'#41484e',light_gray:'#9aa0a5',cyan:'#169c9b',purple:'#8932b8',blue:'#35399d',brown:'#72452a',green:'#546d1b',red:'#b02e26',black:'#191b1f'
 };
@@ -105,11 +166,11 @@ const woolMaterials={};
 function ordinaryBlockMaterial(type,state){
   if(type==='wool'){
     const color=String(state&&state.color||'white').toLowerCase();
-    if(!woolMaterials[color]){const base=WOOL_HEX[color]||WOOL_HEX.white;const tint=new T.Color(base);const shade='#'+tint.clone().multiplyScalar(.64).getHexString();woolMaterials[color]=mat(base,shade,g=>{g.fillStyle=base;g.fillRect(0,0,16,16);g.strokeStyle=shade;g.lineWidth=1;for(let y=2;y<16;y+=4){g.beginPath();g.moveTo(0,y);g.lineTo(16,y+1);g.stroke();}for(let x=3;x<16;x+=5){g.fillStyle=shade;g.fillRect(x,((x*3)%13),1,2);}});}
+    if(!woolMaterials[color]){const base=WOOL_HEX[color]||WOOL_HEX.white;const tint=new T.Color(base);const shade='#'+tint.clone().multiplyScalar(.64).getHexString();woolMaterials[color]=mat(base,shade,g=>{g.fillStyle=base;g.fillRect(0,0,16,16);g.strokeStyle=shade;g.lineWidth=1;for(let y=2;y<16;y+=4){g.beginPath();g.moveTo(0,y);g.lineTo(16,y+1);g.stroke();}for(let x=3;x<16;x+=5){g.fillStyle=shade;g.fillRect(x,((x*3)%13),1,2);}});applyBedrock(woolMaterials[color],['wool_colored_white','concrete_white'],base);}
     return woolMaterials[color];
   }
   if(type.endsWith('_concrete_powder')||type.endsWith('_concrete')){
-    const color=type.replace(/_concrete(?:_powder)?$/,'');const base=WOOL_HEX[color];if(base){const key='concrete_'+type;if(!woolMaterials[key]){const tint=new T.Color(base);woolMaterials[key]=mat(base,'#'+tint.clone().multiplyScalar(.72).getHexString(),g=>{g.fillStyle=base;g.fillRect(0,0,16,16);g.fillStyle='rgba(255,255,255,.18)';for(let y=2;y<16;y+=5)g.fillRect(0,y,16,1);});}return woolMaterials[key];}
+    const color=type.replace(/_concrete(?:_powder)?$/,'');const base=WOOL_HEX[color];if(base){const key='concrete_'+type;if(!woolMaterials[key]){const tint=new T.Color(base);woolMaterials[key]=mat(base,'#'+tint.clone().multiplyScalar(.72).getHexString(),g=>{g.fillStyle=base;g.fillRect(0,0,16,16);g.fillStyle='rgba(255,255,255,.18)';for(let y=2;y<16;y+=5)g.fillRect(0,y,16,1);});applyBedrock(woolMaterials[key],type.endsWith('_powder')?['concrete_powder_white','concrete_white']:['concrete_white'],base);}return woolMaterials[key];}
   }
   if(/_planks$|_log$|_wood$|_stem$|_hyphae$/.test(type)||type.startsWith('stripped_'))return M.planks;
   if(['red_sand','suspicious_sand'].includes(type))return M.sand;
@@ -414,11 +475,11 @@ function panBy(dx,dy) {
 }
 function init(el) {
   view = el; renderer = new T.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
-  renderer.setClearColor(0x14161a); el.appendChild(renderer.domElement);
+  renderer.setClearColor(0x161617); el.appendChild(renderer.domElement);
   scene = new T.Scene(); root = new T.Group(); scene.add(root);
   camera = new T.PerspectiveCamera(55, 1, .1, 1000);
   scene.add(new T.AmbientLight(0xffffff, .65)); const sun = new T.DirectionalLight(0xffffff, .75); sun.position.set(.4, 1, .6); scene.add(sun);
-  scene.add(new T.GridHelper(64, 64, 0x3a404c, 0x23272e).translateY(-.5));
+  scene.add(new T.GridHelper(64, 64, 0x3d3e40, 0x262627).translateY(-.5));
   const anchor = new T.Group();
   [[0xff4d3a, [1, 0, 0]], [0x4dff7a, [0, 1, 0]], [0x4d8aff, [0, 0, 1]]].forEach(([c, d]) => {
     const g = new T.BufferGeometry().setFromPoints([new T.Vector3(0, -.5, 0), new T.Vector3(d[0] * 1.5, -.5 + d[1] * 1.5, d[2] * 1.5)]);

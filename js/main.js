@@ -82,7 +82,7 @@ function updateSpatialListenerPose(ctx=synthAudioContext,pose=null){
 function soundSpatialInfo(sound){
   const pose=window.Renderer&&typeof Renderer.getAudioListener==='function'?Renderer.getAudioListener():null;
   const raw=Array.isArray(sound&&sound.pos)&&sound.pos.length>=3?sound.pos.map(Number):null;
-  if(!pose||!raw||!raw.every(Number.isFinite))return {distance:0,pan:0,attenuation:1,direction:'CENTER',source:raw};
+  if(!pose||!raw||!raw.every(Number.isFinite))return {distance:0,pan:0,attenuation:1,direction:'Center',source:raw};
   // Three.js block meshes are centered at their integer block coordinates.
   const source=raw,lp=pose.position,delta=[source[0]-lp[0],source[1]-lp[1],source[2]-lp[2]];
   const distance=Math.hypot(...delta),dir=distance>1e-6?delta.map(v=>v/distance):[0,0,0];
@@ -91,10 +91,10 @@ function soundSpatialInfo(sound){
   const rlen=Math.hypot(...right)||1;right=right.map(v=>v/rlen);
   const pan=Math.max(-1,Math.min(1,dir[0]*right[0]+dir[1]*right[1]+dir[2]*right[2]));
   const front=dir[0]*f[0]+dir[1]*f[1]+dir[2]*f[2];
-  let side=Math.abs(pan)<.18?'CENTER':pan<0?'LEFT':'RIGHT';
-  if(front<-.24&&side!=='CENTER')side='BEHIND '+side;
-  else if(front<-.45)side='BEHIND';
-  else if(front>.55&&side==='CENTER')side='AHEAD';
+  let side=Math.abs(pan)<.18?'Center':pan<0?'Left':'Right';
+  if(front<-.24&&side!=='Center')side='Behind '+side.toLowerCase();
+  else if(front<-.45)side='Behind';
+  else if(front>.55&&side==='Center')side='Ahead';
   // Common block interaction sounds attenuate smoothly to silence over 16 blocks.
   const attenuation=distance<=1?1:Math.max(0,Math.min(1,(16-distance)/15));
   return {distance,pan,attenuation,direction:side,source};
@@ -104,9 +104,9 @@ function updateAudioMonitor(sound){
   const info=soundSpatialInfo(sound),name=String(sound&&sound.kind||'sound').replace(/_/g,' ');
   const source=info.source&&info.source.every(Number.isFinite)?info.source.map(v=>Number(v).toFixed(0)).join(', '):'unknown source';
   const distance=Number.isFinite(info.distance)?info.distance.toFixed(1)+' blocks':'—';
-  const direction=info.direction||'CENTER';
+  const direction=info.direction||'Center';
   const $sound=document.getElementById('audioSoundName'),$dist=document.getElementById('audioDistance'),$dir=document.getElementById('audioDirection'),$pos=document.getElementById('audioSourcePosition');
-  if($sound)$sound.textContent=name.toUpperCase();if($dist)$dist.textContent=distance;if($dir)$dir.textContent=direction;if($pos)$pos.textContent='XYZ '+source;
+  if($sound)$sound.textContent=name;if($dist)$dist.textContent=distance;if($dir)$dir.textContent=direction;if($pos)$pos.textContent='at '+source;
   const leftBase=Math.sqrt((1-info.pan)/2)*Math.SQRT2,rightBase=Math.sqrt((1+info.pan)/2)*Math.SQRT2;
   // Initial directional estimate is replaced continuously by the real mixed output meters.
   setAudioMeter(document.getElementById('audioLeftMeter'),100*info.attenuation*Math.min(1,leftBase));
@@ -240,7 +240,13 @@ function formatDayTime(value) {
 function renderHud() {
   const el = $('hud');
   if (!el) return;
-  el.textContent = 'Ticks: ' + hudState.tick + '  ·  Blocks: ' + hudState.count + '  ·  Facing: ' + hudState.facing + '  ·  Time: ' + formatDayTime(hudState.dayTime);
+  const cells = [['Tick', hudState.tick], ['Blocks', hudState.count], ['Facing', hudState.facing], ['Clock', formatDayTime(hudState.dayTime)]];
+  el.replaceChildren(...cells.map(([label, value]) => {
+    const cell = document.createElement('span'); cell.className = 'hudCell';
+    const k = document.createElement('span'); k.className = 'hudKey'; k.textContent = label;
+    const v = document.createElement('b'); v.textContent = value;
+    cell.append(k, v); return cell;
+  }));
 }
 function stat(m) {
   if (m && Number.isFinite(Number(m.tick))) hudState.tick = Number(m.tick);
@@ -750,7 +756,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeInfoPopover();
 let paused = false;
 $('pause').onclick = () => { paused = !paused; send({ type: paused ? 'pause' : 'resume' }); $('pause').textContent = paused ? 'Resume' : 'Pause'; };
 $('step').onclick = () => send({ type: 'step', n: 1 });
-$('toggle').onclick = () => { const c = $('panel').classList.toggle('closed'); $('toggle').innerHTML = c ? '&#9654;' : '&#9664;'; };
+$('toggle').onclick = () => { const c = $('panel').classList.toggle('closed'); $('toggle').textContent = c ? 'Show script' : 'Hide script'; };
 
 const list = $('blocks');
 function stateDescription(state){
